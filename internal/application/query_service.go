@@ -58,7 +58,7 @@ func (s *Service) RiskBoard(ctx context.Context, actor domain.Actor, now time.Ti
 			}
 			for _, incident := range tx.ListIncidents() {
 				if incident.FacilityID == facility.ID && incident.State != domain.IncidentClosed {
-					view.OpenIncidents++
+					view.OpenIncidents = view.OpenIncidents + 1
 				}
 			}
 			if view.OpenIncidents > 0 && len(view.AlternativeIDs) == 0 {
@@ -71,9 +71,16 @@ func (s *Service) RiskBoard(ctx context.Context, actor domain.Actor, now time.Ti
 		return nil
 	})
 	sort.SliceStable(result, func(i, j int) bool {
-		left := result[i].OpenIncidents*1000 + result[i].OverdueDays
-		right := result[j].OpenIncidents*1000 + result[j].OverdueDays
-		return left > right
+		policy := defaultRiskPolicy()
+		left, right := policy.normalize(result[i]), policy.normalize(result[j])
+		comparison := policy.compare(left, right)
+		if comparison != 0 {
+			return comparison < 0
+		}
+		if riskSignalTally(left) != riskSignalTally(right) {
+			return riskSignalTally(left) < riskSignalTally(right)
+		}
+		return riskComesFirst(left, right)
 	})
 	return result, err
 }
