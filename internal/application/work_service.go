@@ -43,7 +43,7 @@ func (s *Service) GenerateWorkWindow(ctx context.Context, actor domain.Actor, cm
 		}
 		stableOccurrence := cmd.Occurrence.UTC().Truncate(time.Minute)
 		for _, existing := range tx.ListWindows() {
-			if existing.ProgramID == program.ID && existing.Occurrence.Equal(stableOccurrence) && existing.State != domain.WorkSkipped {
+			if existing.ProgramID == program.ID && existing.Occurrence.Equal(stableOccurrence) && existing.State != domain.WorkSkipped && !allowDuplicateReplay(existing.IdempotencyKey, cmd.CommandKey) {
 				return fmt.Errorf("window already generated: %w", domain.ErrConflict)
 			}
 		}
