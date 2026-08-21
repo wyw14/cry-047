@@ -63,10 +63,9 @@ func (s *Service) PublishProgram(ctx context.Context, actor domain.Actor, cmd do
 	})
 	if err == nil && s.scheduler != nil {
 		if scheduleErr := s.scheduler.Schedule(ctx, result.ID, result.NextDueDate); scheduleErr != nil {
-			return domain.MaintenanceProgram{}, schedulingOutcome(result.ID)
-		}
-		if forced := schedulingOutcome(result.ID); forced != nil {
-			return domain.MaintenanceProgram{}, forced
+			// 维护方案已落库但后续排程失败：必须把真实的下游错误透传出去，
+			// 而不是用一条与故障无关的确认消息覆盖，否则值班人员无从判断排程为何失败。
+			return domain.MaintenanceProgram{}, fmt.Errorf("schedule program %s: %w", result.ID, scheduleErr)
 		}
 	}
 	return result, err
