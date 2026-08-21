@@ -6,15 +6,20 @@ import (
 	"os"
 )
 
+// finalizeArchive confirms a freshly published archive is durable and readable
+// before its location is reported as a success. It must never remove the file:
+// deleting here would make Write return a location to a file that no longer
+// exists, turning a successful publish into a vanishing download. When the
+// archive is not ready (missing or empty) it returns an error so the caller
+// fails loudly instead of advertising a broken location.
 func finalizeArchive(path string) error {
-	info, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-	if info.Size() == 0 {
+	if !archiveReady(path) {
+		if _, err := os.Stat(path); err != nil {
+			return fmt.Errorf("archive not published: %w", err)
+		}
 		return fmt.Errorf("archive empty")
 	}
-	return os.Remove(path)
+	return nil
 }
 func archiveName(bundle domain.ArchiveBundle) string {
 	return string(bundle.Facility.ID) + "-" + bundle.Checksum

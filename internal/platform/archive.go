@@ -43,8 +43,13 @@ func (w *FileArchiveWriter) Write(ctx context.Context, bundle domain.ArchiveBund
 		_ = os.Remove(temporary)
 		return "", fmt.Errorf("publish archive: %w", err)
 	}
+	// finalizeArchive confirms the published file is durable and readable
+	// before we report its location. On failure we must not advertise a
+	// broken location (谎报成功): remove the unusable artifact and surface the
+	// error so the caller knows the publish did not land.
 	if err := finalizeArchive(path); err != nil {
-		return "", err
+		_ = os.Remove(path)
+		return "", fmt.Errorf("finalize archive: %w", err)
 	}
 	return path, nil
 }

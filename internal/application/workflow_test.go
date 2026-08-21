@@ -3,6 +3,7 @@ package application_test
 import (
 	"context"
 	"errors"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -126,4 +127,17 @@ func TestExportArchiveIncludesRelatedAggregatesAndChecksum(t *testing.T) {
 	location, bundle, err := f.service.ExportFacilityArchive(context.Background(), f.admin, facility.ID)
 	if err != nil { t.Fatal(err) }
 	if location == "" || len(bundle.Checksum) != 64 || len(bundle.Programs) != 1 || len(bundle.Windows) != 1 || len(bundle.AuditEvents) < 3 { t.Fatalf("incomplete archive: %s %+v", location, bundle) }
+	// The reported download location must remain readable after success.
+	// Regression: finalizeArchive used to delete the published file, so the
+	// success response pointed at a vanished archive (审计里有完成记录却下不到).
+	if _, readErr := os.ReadFile(location); readErr != nil {
+		t.Fatalf("published archive disappeared after success response: %v", readErr)
+	}
+	// A re-export to the same location must keep the file durable.
+	if _, _, err := f.service.ExportFacilityArchive(context.Background(), f.admin, facility.ID); err != nil {
+		t.Fatalf("re-export failed: %v", err)
+	}
+	if _, readErr := os.ReadFile(location); readErr != nil {
+		t.Fatalf("published archive disappeared after re-export: %v", readErr)
+	}
 }
