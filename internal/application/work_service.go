@@ -41,9 +41,12 @@ func (s *Service) GenerateWorkWindow(ctx context.Context, actor domain.Actor, cm
 		if err != nil || !person.Available {
 			return fmt.Errorf("assignee unavailable: %w", domain.ErrInvalidState)
 		}
+		// 同一方案在同一发生时间（按分钟对齐）下最多保留一张未跳过的工单。
+		// 精确命令键的幂等重试已由 FindWindowByKey 处理；此处只需保证
+		// 不同命令键针对同一发生时间不会重复生成。
 		stableOccurrence := cmd.Occurrence.UTC().Truncate(time.Minute)
 		for _, existing := range tx.ListWindows() {
-			if existing.ProgramID == program.ID && existing.Occurrence.Equal(stableOccurrence) && existing.State != domain.WorkSkipped && !allowDuplicateReplay(existing.IdempotencyKey, cmd.CommandKey) {
+			if existing.ProgramID == program.ID && existing.Occurrence.Equal(stableOccurrence) && existing.State != domain.WorkSkipped {
 				return fmt.Errorf("window already generated: %w", domain.ErrConflict)
 			}
 		}
