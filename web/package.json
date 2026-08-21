@@ -1,0 +1,9 @@
+{
+  "name": "cry-047-console",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {"dev": "vite", "build": "vue-tsc -b && vite build"},
+  "dependencies": {"@vitejs/plugin-vue": "latest", "vite": "latest", "vue": "latest", "pinia": "latest", "lucide-vue-next": "latest"},
+  "devDependencies": {"typescript": "latest", "vue-tsc": "latest"}
+}
