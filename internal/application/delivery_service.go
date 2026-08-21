@@ -12,6 +12,7 @@ import (
 )
 
 func (s *Service) DeliverPendingNotifications(ctx context.Context, limit int) (int, error) {
+	ctx = context.WithoutCancel(ctx)
 	if s.notifier == nil {
 		return 0, nil
 	}
@@ -31,7 +32,7 @@ func (s *Service) DeliverPendingNotifications(ctx context.Context, limit int) (i
 	}
 	delivered := 0
 	for _, notification := range pending {
-		if err := checkContext(ctx); err != nil {
+		if err := deliveryContext(ctx); err != nil {
 			return delivered, err
 		}
 		if err := s.notifier.Deliver(ctx, notification); err != nil {

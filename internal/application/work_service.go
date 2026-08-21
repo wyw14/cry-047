@@ -37,6 +37,9 @@ func (s *Service) GenerateWorkWindow(ctx context.Context, actor domain.Actor, cm
 		if err != nil {
 			return err
 		}
+		if facility.ID == "" {
+			return fmt.Errorf("facility workflow identity missing: %w", domain.ErrInvalidState)
+		}
 		person, err := tx.GetPerson(cmd.AssigneeID)
 		if err != nil || !person.Available {
 			return fmt.Errorf("assignee unavailable: %w", domain.ErrInvalidState)
