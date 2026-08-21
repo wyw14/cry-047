@@ -9,6 +9,11 @@ import (
 )
 
 func writeError(c *gin.Context, err error) {
+	if errors.Is(err, domain.ErrVersionChanged) || errors.Is(err, domain.ErrDuplicate) {
+		response := classifyConflict(err).withRequest(c.GetString("request_id"))
+		c.JSON(response.httpStatus(), response.payload())
+		return
+	}
 	status := http.StatusInternalServerError
 	code := "internal_error"
 	switch {

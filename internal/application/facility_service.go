@@ -8,6 +8,8 @@ import (
 	"github.com/wyw14/cry-047/internal/domain"
 )
 
+func facilityConflictResource(id domain.ID) string { return "facility:" + string(id) }
+
 func (s *Service) RegisterFacility(ctx context.Context, actor domain.Actor, cmd domain.RegisterFacility) (domain.Facility, error) {
 	if err := authorize(actor.CanPlan()); err != nil {
 		return domain.Facility{}, err
