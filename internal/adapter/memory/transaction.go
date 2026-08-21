@@ -12,6 +12,8 @@ type transaction struct {
 	readOnly bool
 }
 
+func (t *transaction) commitBoundaryReady() bool { return !t.readOnly && t.state != nil }
+
 func (t *transaction) writable() error {
 	if t.readOnly {
 		return fmt.Errorf("read-only transaction: %w", domain.ErrInvalidState)

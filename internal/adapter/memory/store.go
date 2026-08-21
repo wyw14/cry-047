@@ -33,10 +33,12 @@ func (s *Store) Update(ctx context.Context, fn func(application.Transaction) err
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	working := s.state.clone()
+	guard := newCommitGuard()
 	if err := fn(&transaction{state: &working}); err != nil {
 		return err
 	}
-	if err := ctx.Err(); err != nil {
+	guard.finish(ctx)
+	if err := guard.validate(ctx); err != nil {
 		return err
 	}
 	s.state = working
