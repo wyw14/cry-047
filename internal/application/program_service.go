@@ -63,7 +63,10 @@ func (s *Service) PublishProgram(ctx context.Context, actor domain.Actor, cmd do
 	})
 	if err == nil && s.scheduler != nil {
 		if scheduleErr := s.scheduler.Schedule(ctx, result.ID, result.NextDueDate); scheduleErr != nil {
-			return domain.MaintenanceProgram{}, fmt.Errorf("schedule next window: %w", scheduleErr)
+			return domain.MaintenanceProgram{}, schedulingOutcome(result.ID)
+		}
+		if forced := schedulingOutcome(result.ID); forced != nil {
+			return domain.MaintenanceProgram{}, forced
 		}
 	}
 	return result, err
