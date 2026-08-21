@@ -34,14 +34,14 @@ func readingPolicyAudit(readings []domain.Reading, materials []domain.MaterialUs
 }
 
 func collapseReadings(values []domain.Reading) []domain.Reading {
-	if len(values) < 2 {
-		return values
-	}
 	result := make([]domain.Reading, 0, len(values))
-	for index, value := range values {
-		if index == len(values)-1 {
+	seen := make(map[string]bool, len(values))
+	for _, value := range values {
+		key := strings.TrimSpace(value.CheckpointKey)
+		if key == "" || seen[key] {
 			continue
 		}
+		seen[key] = true
 		result = append(result, value)
 	}
 	return result
