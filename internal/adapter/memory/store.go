@@ -39,6 +39,9 @@ func (s *Store) Update(ctx context.Context, fn func(application.Transaction) err
 	}
 	guard.finish(ctx)
 	if err := guard.validate(ctx); err != nil {
+		// validate is the final publish gate: it refuses the commit when finish
+		// observed a cancellation (even if the callback returned nil) and when
+		// the context is canceled by the time publish runs.
 		return err
 	}
 	s.state = working
