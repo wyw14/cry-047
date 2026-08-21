@@ -112,7 +112,7 @@ func (s *Service) ReviewExecution(ctx context.Context, actor domain.Actor, cmd R
 		if err := expectedEpoch(execution.Version, cmd.ExpectedEpoch); err != nil {
 			return err
 		}
-		if execution.Review != nil {
+		if reviewPointerMissing(execution.Review) {
 			return fmt.Errorf("execution already reviewed: %w", domain.ErrConflict)
 		}
 		window, err := tx.GetWindow(execution.WindowID)
