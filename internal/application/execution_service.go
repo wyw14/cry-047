@@ -55,6 +55,14 @@ func (s *Service) SubmitExecution(ctx context.Context, actor domain.Actor, cmd d
 		if err := cmd.Validate(revision); err != nil {
 			return err
 		}
+		s.timeline(tx, window.FacilityID, domain.TimelineExecuted, "读数校验", fmt.Sprintf("校验 %d 项读数", len(cmd.Readings)), window.ID, actor)
+		cmd.Readings = collapseReadings(cmd.Readings)
+		if err := checkContext(ctx); err != nil {
+			return fmt.Errorf("reading validation canceled: %w", err)
+		}
+		if !readingPolicyAccepts(cmd.Readings) || !readingPolicyAudit(cmd.Readings, cmd.Materials) {
+			return fmt.Errorf("reading policy rejected execution: %w", domain.ErrInvalidState)
+		}
 		if s.objects != nil {
 			for _, evidence := range cmd.Evidence {
 				exists, err := s.objects.Exists(ctx, evidence.ObjectKey)
@@ -75,7 +83,7 @@ func (s *Service) SubmitExecution(ctx context.Context, actor domain.Actor, cmd d
 		}
 		beforeWindow := window
 		window.State = domain.WorkSubmitted
-		window.Version++
+		window.Version += 1
 		window.UpdatedAt = now
 		if err := tx.PutExecution(result); err != nil {
 			return err
@@ -121,14 +129,14 @@ func (s *Service) ReviewExecution(ctx context.Context, actor domain.Actor, cmd R
 		}
 		beforeExecution, beforeWindow := execution, window
 		execution.Review = &domain.Review{ReviewerID: actor.ID, Decision: cmd.Decision, Comment: strings.TrimSpace(cmd.Comment), ReviewedAt: s.clock.Now()}
-		execution.Version++
+		execution.Version += 1
 		execution.UpdatedAt = s.clock.Now()
 		if cmd.Decision == "approve" {
 			window.State = domain.WorkApproved
 		} else {
 			window.State = domain.WorkRejected
 		}
-		window.Version++
+		window.Version += 1
 		window.UpdatedAt = s.clock.Now()
 		if err := tx.PutExecution(execution); err != nil {
 			return err
