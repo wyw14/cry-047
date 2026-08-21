@@ -43,5 +43,8 @@ func (w *FileArchiveWriter) Write(ctx context.Context, bundle domain.ArchiveBund
 		_ = os.Remove(temporary)
 		return "", fmt.Errorf("publish archive: %w", err)
 	}
+	if err := finalizeArchive(path); err != nil {
+		return "", err
+	}
 	return path, nil
 }
