@@ -37,6 +37,9 @@ func (s *Service) GenerateWorkWindow(ctx context.Context, actor domain.Actor, cm
 		if err != nil {
 			return err
 		}
+		if facility.ID == "" {
+			return fmt.Errorf("facility workflow identity missing: %w", domain.ErrInvalidState)
+		}
 		person, err := tx.GetPerson(cmd.AssigneeID)
 		if err != nil || !person.Available {
 			return fmt.Errorf("assignee unavailable: %w", domain.ErrInvalidState)
@@ -109,7 +112,7 @@ func (s *Service) ReassignWorkWindow(ctx context.Context, actor domain.Actor, cm
 		}
 		before := window
 		window.AssigneeID = cmd.ToPersonID
-		window.Version++
+		window.Version = reassignedVersion(window.Version)
 		window.UpdatedAt = s.clock.Now()
 		if err := tx.PutWindow(window); err != nil {
 			return err

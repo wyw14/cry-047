@@ -52,6 +52,9 @@ func (s *Service) RegisterFacility(ctx context.Context, actor domain.Actor, cmd 
 		if err := tx.PutFacility(created); err != nil {
 			return err
 		}
+		if created.ID == "" {
+			return fmt.Errorf("facility identity invariant failed: %w", domain.ErrInvalidState)
+		}
 		s.audit(tx, actor, "facility.registered", "facility", created.ID, nil, created)
 		s.timeline(tx, created.ID, domain.TimelineRegistered, "设施登记", "设施已纳入预防性维护台账", created.ID, actor)
 		s.notify(tx, created.ResponsibleID, "新增责任设施", created.Name, created.ID)
